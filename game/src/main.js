@@ -121,9 +121,10 @@ function resetWorld() {
   spawnPedestrians(G, 26);
   // Health / armor / ammo pickups from the city's fixed spots.
   for (const s of G.city.pickupSpots) G.pickups.push({ x: s.x, y: s.y, kind: s.kind, t: 0 });
-  // A parked car right by the spawn point so the first drive is one key away.
-  const starter = makeCar(760, 700, 0, 'sedan', '#c0392b');
+  // A parked car right by the spawn point, ON the road, so the first drive is one key away.
+  const starter = makeCar(780, 600, 0, 'sedan', '#c0392b');
   G.cars.push(starter);
+  G.starterCar = starter;
 }
 
 function newGame() {
@@ -132,7 +133,7 @@ function newGame() {
   G.health = 100;
   G.armor = 0;
   G.ammo = 12;
-  G.player.x = 700; G.player.y = 700; G.player.angle = 0;
+  G.player.x = 700; G.player.y = 600; G.player.angle = 0;
   G.player.car = null;
   G.state = 'playing';
   G.sound.init();
@@ -381,11 +382,11 @@ function upkeepPopulation(G, dt) {
 
 function applyScene(G, scene) {
   if (scene === 'drive') {
-    const car = G.cars.find((c) => !c.dead && !c.driver);
+    const car = G.starterCar && !G.starterCar.dead ? G.starterCar : G.cars.find((c) => !c.dead && !c.driver);
     if (car) { G.player.x = car.x; G.player.y = car.y; enterCar(G, car); }
     G.player.car.speed = 260;
   } else if (scene === 'chase') {
-    const car = G.cars.find((c) => !c.dead && !c.driver);
+    const car = G.starterCar && !G.starterCar.dead ? G.starterCar : G.cars.find((c) => !c.dead && !c.driver);
     if (car) { G.player.x = car.x; G.player.y = car.y; enterCar(G, car); }
     G.player.car.speed = 300;
     setWanted(G, 3, 'screenshot chase');
@@ -395,6 +396,8 @@ function applyScene(G, scene) {
     startMission(G, 0);
     G.nextMissionIn = 0;
   }
+  // Screenshots want the world, not the intro banner.
+  G.banner = null;
 }
 
 // ---- Menu / pause button clicks ---------------------------------------------------------------
